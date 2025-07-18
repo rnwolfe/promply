@@ -20,7 +20,7 @@ This directory contains the icons for the Promply browser extension.
 
 ## File Structure
 
-```
+```plaintext
 icons/
 ├── icon-16.png
 ├── icon-32.png  
@@ -39,10 +39,10 @@ icons/
 
 ## Current Status
 
-- [ ] icon-16.png
-- [ ] icon-32.png
-- [ ] icon-48.png
-- [ ] icon-96.png
-- [ ] icon-128.png
+- [x] icon-16.png
+- [x] icon-32.png
+- [x] icon-48.png
+- [x] icon-96.png
+- [x] icon-128.png
 
 Place your icon files in this directory using the naming convention above.
