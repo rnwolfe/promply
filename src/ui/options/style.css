@@ -399,7 +399,190 @@ body {
   opacity: 0.8;
 }
 
-/* Responsive design */
+.snippet-list.options-snippets .snippets-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.snippet-list.options-snippets .snippet-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.snippet-list.options-snippets .snippet-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #c7d2fe;
+}
+
+.snippet-list.options-snippets .snippet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.snippet-list.options-snippets .snippet-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.snippet-list.options-snippets .delete-button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.snippet-list.options-snippets .delete-button:hover:not(:disabled) {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.snippet-list.options-snippets .delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.snippet-list.options-snippets .snippet-body {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  max-height: 5.2em;
+}
+
+.snippet-list.options-snippets .empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  grid-column: 1 / -1;
+}
+
+.snippet-list.options-snippets .empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.snippet-list.options-snippets .empty-state h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.snippet-list.options-snippets .empty-state p {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Form styles for options page */
+.add-snippet-section .snippet-form {
+  margin: 0;
+}
+
+.add-snippet-section .form-group {
+  margin-bottom: 16px;
+}
+
+.add-snippet-section .form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.add-snippet-section .form-input,
+.add-snippet-section .form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  background: #fafafa;
+  resize: vertical;
+}
+
+.add-snippet-section .form-input:focus,
+.add-snippet-section .form-textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.add-snippet-section .form-textarea {
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.add-snippet-section .add-button {
+  width: 100%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.add-snippet-section .add-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.add-snippet-section .add-button:active {
+  transform: translateY(0);
+}
+
+.add-snippet-section .add-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.add-snippet-section .add-button.loading {
+  opacity: 0.8;
+}
+
+.add-snippet-section .button-icon {
+  font-size: 14px;
+}
 @media (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
