@@ -1,28 +1,55 @@
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import { Snippet } from '~/storage';
 
 interface SnippetFormProps {
-  onAdd: (snippet: Omit<Snippet, 'id'>) => Promise<void>;
+  onAdd?: (snippet: Omit<Snippet, 'id'>) => Promise<void>;
+  onUpdate?: (snippet: Snippet) => Promise<void>;
+  editingSnippet?: Snippet | null;
   compact?: boolean;
   className?: string;
 }
 
-export function SnippetForm({ onAdd, compact = false, className = '' }: SnippetFormProps) {
+export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, className = '' }: SnippetFormProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isEditing = !!editingSnippet;
+
+  // Update form state when editingSnippet changes
+  useEffect(() => {
+    if (editingSnippet) {
+      setTitle(editingSnippet.title);
+      setBody(editingSnippet.body);
+    } else {
+      setTitle('');
+      setBody('');
+    }
+  }, [editingSnippet]);
 
   const handleSubmit = async (e?: Event) => {
     e?.preventDefault();
     if (!title.trim() || !body.trim()) return;
 
-    setIsAdding(true);
+    setIsSubmitting(true);
     try {
-      await onAdd({ title: title.trim(), body: body.trim() });
-      setTitle('');
-      setBody('');
+      if (isEditing && editingSnippet && onUpdate) {
+        await onUpdate({ 
+          ...editingSnippet, 
+          title: title.trim(), 
+          body: body.trim() 
+        });
+      } else if (!isEditing && onAdd) {
+        await onAdd({ title: title.trim(), body: body.trim() });
+      }
+      
+      // Only clear form if we're adding (not editing)
+      if (!isEditing) {
+        setTitle('');
+        setBody('');
+      }
     } finally {
-      setIsAdding(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -38,7 +65,7 @@ export function SnippetForm({ onAdd, compact = false, className = '' }: SnippetF
             value={title}
             onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
             className="form-input"
-            disabled={isAdding}
+            disabled={isSubmitting}
           />
         </div>
         <div className="form-group">
@@ -50,18 +77,21 @@ export function SnippetForm({ onAdd, compact = false, className = '' }: SnippetF
             onInput={(e) => setBody((e.target as HTMLTextAreaElement).value)}
             className="form-textarea"
             rows={compact ? 3 : 4}
-            disabled={isAdding}
+            disabled={isSubmitting}
           />
         </div>
         <button 
           type="submit"
-          className={`add-button ${isAdding ? 'loading' : ''}`}
-          disabled={!title.trim() || !body.trim() || isAdding}
+          className={`add-button ${isSubmitting ? 'loading' : ''}`}
+          disabled={!title.trim() || !body.trim() || isSubmitting}
         >
           <span className="button-icon">
-            {isAdding ? '⏳' : '✅'}
+            {isSubmitting ? '⏳' : isEditing ? '💾' : '✅'}
           </span>
-          {isAdding ? 'Adding...' : 'Add Snippet'}
+          {isSubmitting 
+            ? (isEditing ? 'Updating...' : 'Adding...') 
+            : (isEditing ? 'Update Snippet' : 'Add Snippet')
+          }
         </button>
       </form>
     </div>

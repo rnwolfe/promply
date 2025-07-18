@@ -1,11 +1,26 @@
 import { render } from 'preact';
 import { useState } from 'preact/hooks';
 import { useSnippets, SnippetForm, SnippetList } from '../shared';
+import { Snippet } from '~/storage';
 import './style.css';
 
 function Options() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { snippets, loading, addSnippet, deleteSnippet } = useSnippets();
+  const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
+  const { snippets, loading, addSnippet, deleteSnippet, updateSnippet } = useSnippets();
+
+  const handleUpdateSnippet = async (snippet: Snippet) => {
+    await updateSnippet(snippet);
+    setEditingSnippet(null);
+  };
+
+  const handleEditSnippet = (snippet: Snippet) => {
+    setEditingSnippet(snippet);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSnippet(null);
+  };
 
   return (
     <div className="options-container">
@@ -31,10 +46,32 @@ function Options() {
         <div className="sidebar">
           <div className="add-snippet-section">
             <h2>
-              <span className="section-icon">➕</span>
-              Add Snippet
+              <span className="section-icon">{editingSnippet ? '✏️' : '➕'}</span>
+              {editingSnippet ? 'Edit Snippet' : 'Add Snippet'}
             </h2>
-            <SnippetForm onAdd={addSnippet} />
+            <SnippetForm 
+              onAdd={editingSnippet ? undefined : addSnippet}
+              onUpdate={editingSnippet ? handleUpdateSnippet : undefined}
+              editingSnippet={editingSnippet}
+            />
+            {editingSnippet && (
+              <button 
+                onClick={handleCancelEdit}
+                style={{
+                  marginTop: '8px',
+                  width: '100%',
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel Edit
+              </button>
+            )}
           </div>
         </div>
 
@@ -61,6 +98,7 @@ function Options() {
           <SnippetList
             snippets={snippets}
             onDelete={deleteSnippet}
+            onEdit={handleEditSnippet}
             searchQuery={searchQuery}
             className="options-snippets"
           />

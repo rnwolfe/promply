@@ -4,6 +4,7 @@ import { Snippet } from '~/storage';
 interface SnippetListProps {
   snippets: Snippet[];
   onDelete: (id: string) => Promise<void>;
+  onEdit?: (snippet: Snippet) => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   compact?: boolean;
@@ -13,6 +14,7 @@ interface SnippetListProps {
 export function SnippetList({ 
   snippets, 
   onDelete, 
+  onEdit,
   searchQuery = '', 
   onSearchChange,
   compact = false,
@@ -68,14 +70,25 @@ export function SnippetList({
             <div key={snippet.id} className="snippet-card">
               <div className="snippet-header">
                 <h3 className="snippet-title">{snippet.title}</h3>
-                <button 
-                  onClick={() => handleDelete(snippet.id)}
-                  className="delete-button"
-                  title="Delete snippet"
-                  disabled={deletingId === snippet.id}
-                >
-                  {deletingId === snippet.id ? '⏳' : '🗑️'}
-                </button>
+                <div className="snippet-actions">
+                  {onEdit && (
+                    <button 
+                      onClick={() => onEdit(snippet)}
+                      className="edit-button"
+                      title="Edit snippet"
+                    >
+                      ✏️
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => handleDelete(snippet.id)}
+                    className="delete-button"
+                    title="Delete snippet"
+                    disabled={deletingId === snippet.id}
+                  >
+                    {deletingId === snippet.id ? '⏳' : '🗑️'}
+                  </button>
+                </div>
               </div>
               <div className="snippet-body">
                 {snippet.body}
