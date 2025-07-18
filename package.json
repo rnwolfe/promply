@@ -8,8 +8,8 @@
     "build:chrome": "node scripts/build.mjs chrome",
     "build:firefox": "node scripts/build.mjs firefox",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage",
+    "test": "vitest --run",
+    "test:coverage": "vitest --run --coverage",
     "test:ui": "vitest --ui",
     "lint": "eslint .",
     "format": "prettier --write ."
