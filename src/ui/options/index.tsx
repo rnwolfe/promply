@@ -1,6 +1,6 @@
 import { render } from 'preact';
 import { useState } from 'preact/hooks';
-import { useSnippets, SnippetForm, SnippetList } from '../shared';
+import { useSnippets, useSettings, SnippetForm, SnippetList } from '../shared';
 import { Snippet } from '~/storage';
 import './style.css';
 
@@ -8,6 +8,7 @@ function Options() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
   const { snippets, loading, addSnippet, deleteSnippet, updateSnippet } = useSnippets();
+  const { settings, updateSettings } = useSettings();
 
   const handleUpdateSnippet = async (snippet: Snippet) => {
     await updateSnippet(snippet);
@@ -44,6 +45,45 @@ function Options() {
 
       <div className="main-content">
         <div className="sidebar">
+          <div className="settings-section">
+            <h2>
+              <span className="section-icon">⚙️</span>
+              Settings
+            </h2>
+            <div className="setting-item">
+              <label htmlFor="activator-key">Activator Key</label>
+              <input
+                id="activator-key"
+                type="text"
+                value={settings.activatorKey}
+                onInput={(e) => {
+                  const value = (e.target as HTMLInputElement).value;
+                  if (value.length <= 1) { // Only allow single character
+                    updateSettings({ activatorKey: value });
+                  }
+                }}
+                placeholder="/"
+                maxLength={1}
+                style={{
+                  marginTop: '4px',
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+              <p style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                marginTop: '4px',
+                marginBottom: '0'
+              }}>
+                Key to activate the command palette in text fields
+              </p>
+            </div>
+          </div>
+
           <div className="add-snippet-section">
             <h2>
               <span className="section-icon">{editingSnippet ? '✏️' : '➕'}</span>

@@ -12,3 +12,12 @@ export interface SnippetStore {
   updateSnippet: (snippet: Snippet) => Promise<Snippet>;
   deleteSnippet: (id: string) => Promise<void>;
 }
+
+export interface Settings {
+  activatorKey: string;
+}
+
+export interface SettingsStore {
+  getSettings: () => Promise<Settings>;
+  updateSettings: (settings: Partial<Settings>) => Promise<Settings>;
+}
