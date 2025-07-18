@@ -1,14 +1,16 @@
 import { render } from 'preact';
 import { useState } from 'preact/hooks';
 import { useSnippets, SnippetForm, SnippetList } from '../shared';
+import { Snippet } from '~/storage';
 import './style.css';
 
-type PopupView = 'overview' | 'add' | 'manage';
+type PopupView = 'overview' | 'add' | 'manage' | 'edit';
 
 function Popup() {
   const [currentView, setCurrentView] = useState<PopupView>('overview');
   const [searchQuery, setSearchQuery] = useState('');
-  const { snippets, loading, addSnippet, deleteSnippet } = useSnippets();
+  const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
+  const { snippets, loading, addSnippet, deleteSnippet, updateSnippet } = useSnippets();
 
   const openOptionsPage = () => {
     chrome.runtime.openOptionsPage();
@@ -17,6 +19,17 @@ function Popup() {
   const handleAddSnippet = async (snippet: { title: string; body: string }) => {
     await addSnippet(snippet);
     setCurrentView('manage');
+  };
+
+  const handleUpdateSnippet = async (snippet: Snippet) => {
+    await updateSnippet(snippet);
+    setEditingSnippet(null);
+    setCurrentView('manage');
+  };
+
+  const handleEditSnippet = (snippet: Snippet) => {
+    setEditingSnippet(snippet);
+    setCurrentView('edit');
   };
 
   const renderOverview = () => (
@@ -71,6 +84,28 @@ function Popup() {
     </>
   );
 
+  const renderEditView = () => (
+    <>
+      <div className="view-header">
+        <button 
+          className="back-button" 
+          onClick={() => {
+            setEditingSnippet(null);
+            setCurrentView('manage');
+          }}
+        >
+          ← Back
+        </button>
+        <h2>Edit Snippet</h2>
+      </div>
+      <SnippetForm 
+        onUpdate={handleUpdateSnippet} 
+        editingSnippet={editingSnippet}
+        compact={true} 
+      />
+    </>
+  );
+
   const renderManageView = () => (
     <>
       <div className="view-header">
@@ -85,6 +120,7 @@ function Popup() {
       <SnippetList
         snippets={snippets}
         onDelete={deleteSnippet}
+        onEdit={handleEditSnippet}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         compact={true}
@@ -105,6 +141,7 @@ function Popup() {
       <div className="content">
         {currentView === 'overview' && renderOverview()}
         {currentView === 'add' && renderAddView()}
+        {currentView === 'edit' && renderEditView()}
         {currentView === 'manage' && renderManageView()}
         
         {currentView === 'overview' && (
