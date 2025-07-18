@@ -1,13 +1,22 @@
 import { render } from 'preact';
-import { useState } from 'preact/hooks';
-import { useSnippets, SnippetForm, SnippetList } from '../shared';
+import { useState, useEffect } from 'preact/hooks';
+import { useSnippets, useSettings, SnippetForm, SnippetList } from '../shared';
 import { Snippet } from '~/storage';
 import './style.css';
 
 function Options() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [tempSettings, setTempSettings] = useState<{ activatorKey: string }>({ activatorKey: '/' });
+  const [settingsSaved, setSettingsSaved] = useState(false);
   const { snippets, loading, addSnippet, deleteSnippet, updateSnippet } = useSnippets();
+  const { settings, updateSettings } = useSettings();
+
+  // Update temp settings when actual settings load
+  useEffect(() => {
+    setTempSettings({ activatorKey: settings.activatorKey });
+  }, [settings.activatorKey]);
 
   const handleUpdateSnippet = async (snippet: Snippet) => {
     await updateSnippet(snippet);
@@ -20,6 +29,17 @@ function Options() {
 
   const handleCancelEdit = () => {
     setEditingSnippet(null);
+  };
+
+  const handleAddSnippet = async (snippet: Omit<Snippet, 'id'>) => {
+    await addSnippet(snippet);
+    setShowAddModal(false);
+  };
+
+  const handleSaveSettings = async () => {
+    await updateSettings(tempSettings);
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 2000);
   };
 
   return (
@@ -44,34 +64,52 @@ function Options() {
 
       <div className="main-content">
         <div className="sidebar">
-          <div className="add-snippet-section">
+          <div className="settings-section">
             <h2>
-              <span className="section-icon">{editingSnippet ? '✏️' : '➕'}</span>
-              {editingSnippet ? 'Edit Snippet' : 'Add Snippet'}
+              <span className="section-icon">⚙️</span>
+              Settings
             </h2>
-            <SnippetForm 
-              onAdd={editingSnippet ? undefined : addSnippet}
-              onUpdate={editingSnippet ? handleUpdateSnippet : undefined}
-              editingSnippet={editingSnippet}
-            />
-            {editingSnippet && (
-              <button 
-                onClick={handleCancelEdit}
-                style={{
-                  marginTop: '8px',
-                  width: '100%',
-                  background: '#6b7280',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  fontSize: '12px',
-                  cursor: 'pointer'
+            <div className="setting-item">
+              <label htmlFor="activator-key">Activator Key</label>
+              <input
+                id="activator-key"
+                type="text"
+                value={tempSettings.activatorKey}
+                onInput={(e) => {
+                  const value = (e.target as HTMLInputElement).value;
+                  if (value.length <= 1) { // Only allow single character
+                    setTempSettings({ activatorKey: value });
+                  }
                 }}
-              >
-                Cancel Edit
-              </button>
-            )}
+                placeholder="/"
+                maxLength={1}
+                className="settings-input"
+              />
+              <p className="setting-description">
+                Key to activate the command palette in text fields
+                <br />
+                <span className="setting-note">
+                  💡 Any existing tabs using Promply must be reloaded for the new activator to take effect
+                </span>
+              </p>
+            </div>
+            <button 
+              onClick={handleSaveSettings}
+              className={`save-settings-button ${settingsSaved ? 'saved' : ''}`}
+              disabled={tempSettings.activatorKey === settings.activatorKey}
+            >
+              {settingsSaved ? '✓ Settings Saved' : 'Save Settings'}
+            </button>
+          </div>
+
+          <div className="add-snippet-section">
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="add-snippet-button"
+            >
+              <span className="button-icon">➕</span>
+              Add New Snippet
+            </button>
           </div>
         </div>
 
@@ -104,6 +142,49 @@ function Options() {
           />
         </div>
       </div>
+
+      {/* Add Snippet Modal */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Add New Snippet</h3>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <SnippetForm onAdd={handleAddSnippet} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Snippet Modal */}
+      {editingSnippet && (
+        <div className="modal-overlay" onClick={handleCancelEdit}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit Snippet</h3>
+              <button 
+                onClick={handleCancelEdit}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <SnippetForm 
+                onUpdate={handleUpdateSnippet}
+                editingSnippet={editingSnippet}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,11 @@
-import { Snippet, SnippetStore } from '.';
+import { Snippet, SnippetStore, Settings, SettingsStore } from '.';
 
 const SNIPPETS_KEY = 'snippets';
+const SETTINGS_KEY = 'settings';
+
+const DEFAULT_SETTINGS: Settings = {
+  activatorKey: '/',
+};
 
 // Function to check if extension context is still valid
 function isExtensionContextValid(): boolean {
@@ -84,6 +89,42 @@ export class LocalSnippetStore implements SnippetStore {
       await chrome.storage.local.set({ [SNIPPETS_KEY]: newSnippets });
     } catch (error) {
       console.error('Failed to delete snippet:', error);
+      throw error;
+    }
+  }
+}
+
+export class LocalSettingsStore implements SettingsStore {
+  async getSettings(): Promise<Settings> {
+    try {
+      if (!isExtensionContextValid()) {
+        console.warn('Extension context invalidated - cannot access storage');
+        return DEFAULT_SETTINGS;
+      }
+      const result = await chrome.storage.local.get(SETTINGS_KEY);
+      return { ...DEFAULT_SETTINGS, ...result[SETTINGS_KEY] };
+    } catch (error) {
+      console.warn(
+        'Failed to access settings storage (extension may have been reloaded):',
+        error,
+      );
+      return DEFAULT_SETTINGS;
+    }
+  }
+
+  async updateSettings(settingsUpdate: Partial<Settings>): Promise<Settings> {
+    try {
+      if (!isExtensionContextValid()) {
+        throw new Error(
+          'Extension context invalidated - cannot access storage',
+        );
+      }
+      const currentSettings = await this.getSettings();
+      const newSettings = { ...currentSettings, ...settingsUpdate };
+      await chrome.storage.local.set({ [SETTINGS_KEY]: newSettings });
+      return newSettings;
+    } catch (error) {
+      console.error('Failed to update settings:', error);
       throw error;
     }
   }
