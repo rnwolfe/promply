@@ -245,5 +245,19 @@ describe('UI Components', () => {
 
       expect(getByText('📁 Work')).toBeInTheDocument();
     });
+
+    it('should render combobox instead of regular input for folder selection', () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal'];
+
+      const { getByRole } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      expect(combobox).toBeInTheDocument();
+      expect(combobox).toHaveAttribute('aria-expanded', 'false');
+      expect(combobox).toHaveAttribute('aria-haspopup', 'listbox');
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Snippet } from '~/storage';
+import { FolderCombobox } from './FolderCombobox';
 
 interface SnippetFormProps {
   onAdd?: (snippet: Omit<Snippet, 'id'>) => Promise<void>;
@@ -80,23 +81,14 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
         </div>
         <div className="form-group">
           <label htmlFor="folder">Folder (optional)</label>
-          <input
-            id="folder"
-            type="text"
-            placeholder="Enter folder name..."
+          <FolderCombobox
             value={folder}
-            onInput={(e) => setFolder((e.target as HTMLInputElement).value)}
-            className="form-input"
+            onChange={setFolder}
+            availableFolders={availableFolders}
+            placeholder="Enter folder name..."
             disabled={isSubmitting}
-            list="available-folders"
+            className=""
           />
-          {availableFolders.length > 0 && (
-            <datalist id="available-folders">
-              {availableFolders.map(folderName => (
-                <option key={folderName} value={folderName} />
-              ))}
-            </datalist>
-          )}
         </div>
         <div className="form-group">
           <label htmlFor="body">Content</label>
