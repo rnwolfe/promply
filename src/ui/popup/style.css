@@ -589,3 +589,71 @@ body {
   font-size: 11px;
   opacity: 0.8;
 }
+
+/* Compact folder styles */
+.snippet-list.compact .folder-group {
+  margin-bottom: 16px;
+}
+
+.snippet-list.compact .folder-header {
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.snippet-list.compact .folder-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.snippet-list.compact .folder-icon {
+  font-size: 12px;
+}
+
+.snippet-list.compact .folder-count {
+  font-size: 10px;
+  font-weight: 400;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.snippet-list.compact .folder-snippets {
+  display: grid;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.snippet-list.compact .snippet-folder {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.snippet-list.compact .folder-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.snippet-list.compact .folder-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 1px 4px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 500;
+  border: 1px solid #dbeafe;
+}

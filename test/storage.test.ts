@@ -303,4 +303,67 @@ describe('LocalSnippetStore', () => {
       expect(result.body).toBe(specialContent);
     });
   });
+
+  describe('Folder functionality', () => {
+    it('should add snippet with folder', async () => {
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: [] });
+
+      const snippetWithFolder = { title: 'test', body: 'test', folder: 'Work' };
+      const result = await store.addSnippet(snippetWithFolder);
+
+      expect(result.folder).toBe('Work');
+    });
+
+    it('should add snippet without folder', async () => {
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: [] });
+
+      const snippetWithoutFolder = { title: 'test', body: 'test' };
+      const result = await store.addSnippet(snippetWithoutFolder);
+
+      expect(result.folder).toBeUndefined();
+    });
+
+    it('should update snippet folder', async () => {
+      const snippets = [{ id: '1', title: 'test', body: 'test' }];
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets });
+
+      const updatedSnippet = { 
+        id: '1', 
+        title: 'test', 
+        body: 'test', 
+        folder: 'Personal' 
+      };
+      const result = await store.updateSnippet(updatedSnippet);
+
+      expect(result.folder).toBe('Personal');
+    });
+
+    it('should update snippet to remove folder', async () => {
+      const snippets = [{ 
+        id: '1', 
+        title: 'test', 
+        body: 'test', 
+        folder: 'Work' 
+      }];
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets });
+
+      const updatedSnippet = { 
+        id: '1', 
+        title: 'test', 
+        body: 'test' 
+      };
+      const result = await store.updateSnippet(updatedSnippet);
+
+      expect(result.folder).toBeUndefined();
+    });
+
+    it('should handle empty folder name', async () => {
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: [] });
+
+      const snippetWithEmptyFolder = { title: 'test', body: 'test', folder: '' };
+      const result = await store.addSnippet(snippetWithEmptyFolder);
+
+      expect(result.folder).toBe('');
+    });
+  });
 });

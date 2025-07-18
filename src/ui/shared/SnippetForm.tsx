@@ -7,11 +7,13 @@ interface SnippetFormProps {
   editingSnippet?: Snippet | null;
   compact?: boolean;
   className?: string;
+  availableFolders?: string[];
 }
 
-export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, className = '' }: SnippetFormProps) {
+export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, className = '', availableFolders = [] }: SnippetFormProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [folder, setFolder] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditing = !!editingSnippet;
@@ -21,9 +23,11 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
     if (editingSnippet) {
       setTitle(editingSnippet.title);
       setBody(editingSnippet.body);
+      setFolder(editingSnippet.folder || '');
     } else {
       setTitle('');
       setBody('');
+      setFolder('');
     }
   }, [editingSnippet]);
 
@@ -33,20 +37,26 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
 
     setIsSubmitting(true);
     try {
+      const snippetData = { 
+        title: title.trim(), 
+        body: body.trim(),
+        folder: folder.trim() || undefined
+      };
+
       if (isEditing && editingSnippet && onUpdate) {
         await onUpdate({ 
           ...editingSnippet, 
-          title: title.trim(), 
-          body: body.trim() 
+          ...snippetData
         });
       } else if (!isEditing && onAdd) {
-        await onAdd({ title: title.trim(), body: body.trim() });
+        await onAdd(snippetData);
       }
       
       // Only clear form if we're adding (not editing)
       if (!isEditing) {
         setTitle('');
         setBody('');
+        setFolder('');
       }
     } finally {
       setIsSubmitting(false);
@@ -67,6 +77,26 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
             className="form-input"
             disabled={isSubmitting}
           />
+        </div>
+        <div className="form-group">
+          <label htmlFor="folder">Folder (optional)</label>
+          <input
+            id="folder"
+            type="text"
+            placeholder="Enter folder name..."
+            value={folder}
+            onInput={(e) => setFolder((e.target as HTMLInputElement).value)}
+            className="form-input"
+            disabled={isSubmitting}
+            list="available-folders"
+          />
+          {availableFolders.length > 0 && (
+            <datalist id="available-folders">
+              {availableFolders.map(folderName => (
+                <option key={folderName} value={folderName} />
+              ))}
+            </datalist>
+          )}
         </div>
         <div className="form-group">
           <label htmlFor="body">Content</label>

@@ -161,4 +161,89 @@ describe('UI Components', () => {
       expect(getByText('Create your first snippet to get started')).toBeInTheDocument();
     });
   });
+
+  describe('Folder functionality', () => {
+    it('should render folder input in SnippetForm', () => {
+      const mockAdd = vi.fn();
+      const { getByRole } = render(
+        <SnippetForm onAdd={mockAdd} />
+      );
+
+      expect(getByRole('combobox', { name: /folder/i })).toBeInTheDocument();
+    });
+
+    it('should populate folder field when editing snippet with folder', () => {
+      const mockUpdate = vi.fn();
+      const testSnippet: Snippet = {
+        id: '1',
+        title: 'Test Title',
+        body: 'Test Content',
+        folder: 'Work'
+      };
+
+      const { getByDisplayValue } = render(
+        <SnippetForm onUpdate={mockUpdate} editingSnippet={testSnippet} />
+      );
+
+      expect(getByDisplayValue('Work')).toBeInTheDocument();
+    });
+
+    it('should group snippets by folder when groupByFolders is true', () => {
+      const snippets: Snippet[] = [
+        { id: '1', title: 'Snippet 1', body: 'Content 1', folder: 'Work' },
+        { id: '2', title: 'Snippet 2', body: 'Content 2', folder: 'Personal' },
+        { id: '3', title: 'Snippet 3', body: 'Content 3' }
+      ];
+      const mockDelete = vi.fn();
+
+      const { getByText } = render(
+        <SnippetList 
+          snippets={snippets} 
+          onDelete={mockDelete}
+          groupByFolders={true}
+        />
+      );
+
+      expect(getByText('Work')).toBeInTheDocument();
+      expect(getByText('Personal')).toBeInTheDocument();
+      expect(getByText('Ungrouped')).toBeInTheDocument();
+    });
+
+    it('should filter snippets by folder name in search', () => {
+      const snippets: Snippet[] = [
+        { id: '1', title: 'Meeting notes', body: 'Content 1', folder: 'Work' },
+        { id: '2', title: 'Personal reminder', body: 'Content 2', folder: 'Personal' },
+      ];
+      const mockDelete = vi.fn();
+
+      const { getByText, queryByText } = render(
+        <SnippetList 
+          snippets={snippets} 
+          onDelete={mockDelete}
+          searchQuery="Work"
+          groupByFolders={false}
+        />
+      );
+
+      expect(getByText('Meeting notes')).toBeInTheDocument();
+      expect(queryByText('Personal reminder')).not.toBeInTheDocument();
+    });
+
+    it('should show folder information when not grouping by folders', () => {
+      const snippets: Snippet[] = [
+        { id: '1', title: 'Test Snippet', body: 'Content 1', folder: 'Work' }
+      ];
+      const mockDelete = vi.fn();
+
+      const { getByText } = render(
+        <SnippetList 
+          snippets={snippets} 
+          onDelete={mockDelete}
+          groupByFolders={false}
+        />
+      );
+
+      expect(getByText('📁 Work')).toBeInTheDocument();
+    });
+  });
 });

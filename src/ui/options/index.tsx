@@ -9,6 +9,11 @@ function Options() {
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
   const { snippets, loading, addSnippet, deleteSnippet, updateSnippet } = useSnippets();
 
+  // Extract available folders from existing snippets
+  const availableFolders = Array.from(
+    new Set(snippets.filter(s => s.folder).map(s => s.folder!))
+  ).sort();
+
   const handleUpdateSnippet = async (snippet: Snippet) => {
     await updateSnippet(snippet);
     setEditingSnippet(null);
@@ -53,6 +58,7 @@ function Options() {
               onAdd={editingSnippet ? undefined : addSnippet}
               onUpdate={editingSnippet ? handleUpdateSnippet : undefined}
               editingSnippet={editingSnippet}
+              availableFolders={availableFolders}
             />
             {editingSnippet && (
               <button 
