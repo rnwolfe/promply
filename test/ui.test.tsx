@@ -301,5 +301,51 @@ describe('UI Components', () => {
       // Should show create option
       expect(getByText('Create "NewFolder"')).toBeInTheDocument();
     });
+
+    it('should select first filtered option when pressing Enter without highlighting', async () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal', 'Projects'];
+
+      const { getByRole } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      
+      // Focus the input to open dropdown
+      fireEvent.focus(combobox);
+      
+      // Type to filter to "Personal"
+      fireEvent.input(combobox, { target: { value: 'Per' } });
+      
+      // Press Enter without using arrow keys to highlight
+      fireEvent.keyDown(combobox, { key: 'Enter' });
+      
+      // Should select "Personal" (the first and only filtered result)
+      expect(combobox).toHaveValue('Personal');
+    });
+
+    it('should create new folder when pressing Enter on non-existing name', async () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal'];
+
+      const { getByRole } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      
+      // Focus the input to open dropdown
+      fireEvent.focus(combobox);
+      
+      // Type a new folder name
+      fireEvent.input(combobox, { target: { value: 'NewFolder' } });
+      
+      // Press Enter without using arrow keys to highlight
+      fireEvent.keyDown(combobox, { key: 'Enter' });
+      
+      // Should select the new folder name
+      expect(combobox).toHaveValue('NewFolder');
+    });
   });
 });

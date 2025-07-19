@@ -95,9 +95,20 @@ export function FolderCombobox({
       case 'Enter':
         e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < filteredFolders.length) {
+          // User has highlighted a specific folder option
           selectFolder(filteredFolders[highlightedIndex]);
         } else if (highlightedIndex === filteredFolders.length && shouldShowCreateOption()) {
+          // User has highlighted the create option
           selectFolder(value.trim());
+        } else if (highlightedIndex === -1) {
+          // No item highlighted, select the first available option
+          if (filteredFolders.length > 0) {
+            // Select the first filtered folder
+            selectFolder(filteredFolders[0]);
+          } else if (shouldShowCreateOption()) {
+            // No existing folders match, create new one
+            selectFolder(value.trim());
+          }
         }
         break;
       case 'Escape':
