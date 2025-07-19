@@ -529,7 +529,7 @@ body {
 }
 
 .snippet-list.compact .snippets-container {
-  max-height: 250px;
+  max-height: 338px;
   overflow-y: auto;
 }
 
