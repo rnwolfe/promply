@@ -3,6 +3,7 @@ import { useState } from 'preact/hooks';
 import { useSnippets, SnippetForm, SnippetList } from '../shared';
 import { Snippet } from '~/storage';
 import './style.css';
+import '../options/style.css';
 
 type PopupView = 'overview' | 'add' | 'manage' | 'edit';
 
