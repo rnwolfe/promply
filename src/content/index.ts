@@ -181,7 +181,7 @@ async function openCommandPalette() {
   });
 
   // Listen for close event
-  header.addEventListener('close-palette', closeCommandPalette);
+  header.addEventListener('close-palette', () => closeCommandPalette());
 
   // Listen for escape key and outside clicks
   document.addEventListener('keydown', handleKeyDown);
@@ -333,7 +333,7 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
-function closeCommandPalette() {
+function closeCommandPalette(preserveTarget = false) {
   const backdrop = document.querySelector('.command-palette-backdrop');
   if (backdrop) {
     backdrop.remove();
@@ -342,7 +342,9 @@ function closeCommandPalette() {
   if (commandPalette) {
     commandPalette = null;
     document.removeEventListener('keydown', handleKeyDown);
-    originalTargetElement = null;
+    if (!preserveTarget) {
+      originalTargetElement = null;
+    }
   }
 }
 
@@ -364,8 +366,8 @@ function showVariableInputModal(snippet: Snippet) {
     return;
   }
 
-  // Close command palette first
-  closeCommandPalette();
+  // Close command palette but preserve originalTargetElement
+  closeCommandPalette(true);
 
   // Create backdrop
   const backdrop = document.createElement('div');
@@ -390,8 +392,7 @@ function showVariableInputModal(snippet: Snippet) {
   const form = document.createElement('form');
   form.className = 'variable-form';
 
-  const variableValues: Record<string, string> = {};
-
+  // Build input fields
   variablesWithMetadata.forEach((variable, index) => {
     const fieldContainer = document.createElement('div');
     fieldContainer.className = 'variable-field';
@@ -403,16 +404,10 @@ function showVariableInputModal(snippet: Snippet) {
     const input = document.createElement('input');
     input.type = 'text';
     input.id = `var-${variable.name}`;
+    input.name = `var-${variable.name}`;
     input.placeholder = variable.defaultValue || `Enter ${variable.name}...`;
     input.value = variable.defaultValue || '';
     input.className = 'variable-input-field';
-
-    // Store initial value
-    variableValues[variable.name] = input.value;
-
-    input.addEventListener('input', (e) => {
-      variableValues[variable.name] = (e.target as HTMLInputElement).value;
-    });
 
     // Focus first input
     if (index === 0) {
@@ -441,10 +436,12 @@ function showVariableInputModal(snippet: Snippet) {
   actions.appendChild(cancelButton);
   actions.appendChild(insertButton);
 
+  // Add actions to form (not modal)
+  form.appendChild(actions);
+
   // Assemble modal
   modal.appendChild(header);
   modal.appendChild(form);
-  modal.appendChild(actions);
   backdrop.appendChild(modal);
   document.body.appendChild(backdrop);
 
@@ -456,6 +453,14 @@ function showVariableInputModal(snippet: Snippet) {
   };
 
   const insertSnippet = () => {
+    // Build variableValues fresh from the form inputs
+    const variableValues: Record<string, string> = {};
+    variablesWithMetadata.forEach((variable) => {
+      const inputEl = form.elements.namedItem(`var-${variable.name}`) as HTMLInputElement;
+      if (inputEl) {
+        variableValues[variable.name] = inputEl.value;
+      }
+    });
     const processedContent = processTemplate(snippet.body, variableValues);
     pasteSnippet(processedContent);
     closeModal();
