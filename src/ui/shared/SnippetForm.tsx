@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'preact/hooks';
-import { Snippet } from '~/storage';
+import { Snippet, SnippetVariable } from '~/storage';
 import { FolderCombobox } from './FolderCombobox';
+import { VariableList } from './VariableList';
 
 interface SnippetFormProps {
   onAdd?: (snippet: Omit<Snippet, 'id'>) => Promise<void>;
@@ -15,6 +16,7 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [folder, setFolder] = useState('');
+  const [variables, setVariables] = useState<SnippetVariable[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditing = !!editingSnippet;
@@ -25,10 +27,12 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
       setTitle(editingSnippet.title);
       setBody(editingSnippet.body);
       setFolder(editingSnippet.folder || '');
+      setVariables(editingSnippet.variables || []);
     } else {
       setTitle('');
       setBody('');
       setFolder('');
+      setVariables([]);
     }
   }, [editingSnippet]);
 
@@ -41,7 +45,8 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
       const snippetData = { 
         title: title.trim(), 
         body: body.trim(),
-        folder: folder.trim() || undefined
+        folder: folder.trim() || undefined,
+        variables: variables.length > 0 ? variables : undefined
       };
 
       if (isEditing && editingSnippet && onUpdate) {
@@ -58,6 +63,7 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
         setTitle('');
         setBody('');
         setFolder('');
+        setVariables([]);
       }
     } finally {
       setIsSubmitting(false);
@@ -94,12 +100,20 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
           <label htmlFor="body">Content</label>
           <textarea
             id="body"
-            placeholder="Enter your prompt..."
+            placeholder="Enter your prompt... Use {{variableName}} for dynamic content."
             value={body}
             onInput={(e) => setBody((e.target as HTMLTextAreaElement).value)}
             className="form-textarea"
             rows={compact ? 3 : 4}
             disabled={isSubmitting}
+          />
+        </div>
+        <div className="form-group">
+          <VariableList
+            variables={variables}
+            onChange={setVariables}
+            disabled={isSubmitting}
+            className=""
           />
         </div>
         <button 

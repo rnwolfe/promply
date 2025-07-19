@@ -1,3 +1,9 @@
+export interface SnippetVariable {
+  name: string;
+  description?: string;
+  defaultValue?: string;
+}
+
 export interface Snippet {
   id: string;
   title: string;
@@ -5,6 +11,7 @@ export interface Snippet {
   tags?: string[];
   shortcut?: string;
   folder?: string;
+  variables?: SnippetVariable[];
 }
 
 export interface SnippetStore {
