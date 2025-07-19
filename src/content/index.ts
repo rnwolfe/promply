@@ -1,6 +1,7 @@
 import Fuse from 'fuse.js';
 import { Snippet } from '~/storage';
 import { LocalSnippetStore, LocalSettingsStore } from '~/storage/local';
+import { hasVariables, processTemplate, getVariablesWithMetadata } from '~/utils/template';
 
 const store = new LocalSnippetStore();
 const settingsStore = new LocalSettingsStore();
@@ -174,8 +175,7 @@ async function openCommandPalette() {
         selectedIndex < filteredSnippets.length
       ) {
         const selectedSnippet = filteredSnippets[selectedIndex];
-        pasteSnippet(selectedSnippet.body);
-        closeCommandPalette();
+        handleSnippetSelection(selectedSnippet);
       }
     }
   });
@@ -315,8 +315,7 @@ function renderSnippets(snippetsToShow: Snippet[]) {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      pasteSnippet(snippet.body);
-      closeCommandPalette();
+      handleSnippetSelection(snippet);
     });
 
     item.addEventListener('mouseenter', () => {
@@ -345,6 +344,161 @@ function closeCommandPalette() {
     document.removeEventListener('keydown', handleKeyDown);
     originalTargetElement = null;
   }
+}
+
+function handleSnippetSelection(snippet: Snippet) {
+  if (hasVariables(snippet.body)) {
+    showVariableInputModal(snippet);
+  } else {
+    pasteSnippet(snippet.body);
+    closeCommandPalette();
+  }
+}
+
+function showVariableInputModal(snippet: Snippet) {
+  const variablesWithMetadata = getVariablesWithMetadata(snippet.body, snippet.variables);
+  
+  if (variablesWithMetadata.length === 0) {
+    pasteSnippet(snippet.body);
+    closeCommandPalette();
+    return;
+  }
+
+  // Close command palette first
+  closeCommandPalette();
+
+  // Create backdrop
+  const backdrop = document.createElement('div');
+  backdrop.className = 'variable-modal-backdrop';
+
+  // Create modal container
+  const modal = document.createElement('div');
+  modal.className = 'variable-modal';
+
+  // Create header
+  const header = document.createElement('div');
+  header.className = 'variable-modal-header';
+  header.innerHTML = `
+    <div class="modal-header-content">
+      <h3>Fill in Variables</h3>
+      <p>Complete the following fields to personalize your snippet</p>
+    </div>
+    <button class="modal-close-button">×</button>
+  `;
+
+  // Create form
+  const form = document.createElement('form');
+  form.className = 'variable-form';
+
+  const variableValues: Record<string, string> = {};
+
+  variablesWithMetadata.forEach((variable, index) => {
+    const fieldContainer = document.createElement('div');
+    fieldContainer.className = 'variable-field';
+
+    const label = document.createElement('label');
+    label.textContent = variable.description || variable.name;
+    label.setAttribute('for', `var-${variable.name}`);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = `var-${variable.name}`;
+    input.placeholder = variable.defaultValue || `Enter ${variable.name}...`;
+    input.value = variable.defaultValue || '';
+    input.className = 'variable-input-field';
+
+    // Store initial value
+    variableValues[variable.name] = input.value;
+
+    input.addEventListener('input', (e) => {
+      variableValues[variable.name] = (e.target as HTMLInputElement).value;
+    });
+
+    // Focus first input
+    if (index === 0) {
+      setTimeout(() => input.focus(), 100);
+    }
+
+    fieldContainer.appendChild(label);
+    fieldContainer.appendChild(input);
+    form.appendChild(fieldContainer);
+  });
+
+  // Create actions
+  const actions = document.createElement('div');
+  actions.className = 'variable-modal-actions';
+
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.textContent = 'Cancel';
+  cancelButton.className = 'variable-cancel-button';
+
+  const insertButton = document.createElement('button');
+  insertButton.type = 'submit';
+  insertButton.textContent = 'Insert Snippet';
+  insertButton.className = 'variable-insert-button';
+
+  actions.appendChild(cancelButton);
+  actions.appendChild(insertButton);
+
+  // Assemble modal
+  modal.appendChild(header);
+  modal.appendChild(form);
+  modal.appendChild(actions);
+  backdrop.appendChild(modal);
+  document.body.appendChild(backdrop);
+
+  // Event handlers
+  const closeModal = () => {
+    if (backdrop.parentNode) {
+      backdrop.remove();
+    }
+  };
+
+  const insertSnippet = () => {
+    const processedContent = processTemplate(snippet.body, variableValues);
+    pasteSnippet(processedContent);
+    closeModal();
+  };
+
+  // Listen for events
+  cancelButton.addEventListener('click', closeModal);
+  header.querySelector('.modal-close-button')?.addEventListener('click', closeModal);
+  
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    insertSnippet();
+  });
+
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) {
+      closeModal();
+    }
+  });
+
+  // Handle escape key
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
+
+  // Remove escape listener when modal is closed
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'childList') {
+        mutation.removedNodes.forEach((node) => {
+          if (node === backdrop) {
+            document.removeEventListener('keydown', handleEscape);
+            observer.disconnect();
+          }
+        });
+      }
+    });
+  });
+  observer.observe(document.body, { childList: true });
 }
 
 function handleKeyDown(e: KeyboardEvent) {
