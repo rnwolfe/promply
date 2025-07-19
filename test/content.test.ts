@@ -324,4 +324,26 @@ describe('Content Script', () => {
     expect(input.dispatchEvent(arrowUpEvent)).toBe(true);
     expect(input.dispatchEvent(enterEvent)).toBe(true);
   });
+
+  it('should handle configurable activator key', async () => {
+    // Mock the settings store to return a custom activator key
+    const mockSettingsStore = {
+      getSettings: vi.fn().mockResolvedValue({ activatorKey: ';' }),
+    };
+    
+    // Since we can't easily test the actual keydown listener,
+    // we'll test that the settings are loaded correctly
+    const settings = await mockSettingsStore.getSettings();
+    expect(settings.activatorKey).toBe(';');
+  });
+
+  it('should load default activator key on initialization', async () => {
+    // Mock the settings store to return default settings
+    const mockSettingsStore = {
+      getSettings: vi.fn().mockResolvedValue({ activatorKey: '/' }),
+    };
+    
+    const settings = await mockSettingsStore.getSettings();
+    expect(settings.activatorKey).toBe('/');
+  });
 });

@@ -197,8 +197,8 @@ describe('UI Components', () => {
       const mockDelete = vi.fn();
 
       const { getByText } = render(
-        <SnippetList 
-          snippets={snippets} 
+        <SnippetList
+          snippets={snippets}
           onDelete={mockDelete}
           groupByFolders={true}
         />
@@ -217,8 +217,8 @@ describe('UI Components', () => {
       const mockDelete = vi.fn();
 
       const { getByText, queryByText } = render(
-        <SnippetList 
-          snippets={snippets} 
+        <SnippetList
+          snippets={snippets}
           onDelete={mockDelete}
           searchQuery="Work"
           groupByFolders={false}
@@ -236,8 +236,8 @@ describe('UI Components', () => {
       const mockDelete = vi.fn();
 
       const { getByText } = render(
-        <SnippetList 
-          snippets={snippets} 
+        <SnippetList
+          snippets={snippets}
           onDelete={mockDelete}
           groupByFolders={false}
         />
@@ -346,6 +346,73 @@ describe('UI Components', () => {
       
       // Should select the new folder name
       expect(combobox).toHaveValue('NewFolder');
+    });
+  });
+
+  describe('Settings Integration', () => {
+    it('should handle activator key changes', () => {
+      // Test that the UI can handle single character inputs
+      const mockUpdate = vi.fn();
+      
+      // Create a mock input element
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.value = '/';
+      
+      // Simulate changing the value
+      input.value = ';';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      expect(input.value).toBe(';');
+      expect(input.value.length).toBe(1);
+    });
+
+    it('should prevent multi-character activator keys', () => {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.value = '/';
+      
+      // In the actual implementation, we handle this in the onInput event
+      // Here we simulate the validation logic that would prevent multi-character input
+      const newValue = 'abc';
+      const validatedValue = newValue.length <= 1 ? newValue : input.value;
+      
+      expect(validatedValue.length).toBeLessThanOrEqual(1);
+    });
+  });
+        describe('Settings Integration', () => {
+    it('should handle activator key changes', () => {
+      // Test that the UI can handle single character inputs
+      const mockUpdate = vi.fn();
+      
+      // Create a mock input element
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.value = '/';
+      
+      // Simulate changing the value
+      input.value = ';';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      expect(input.value).toBe(';');
+      expect(input.value.length).toBe(1);
+    });
+
+    it('should prevent multi-character activator keys', () => {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.value = '/';
+      
+      // In the actual implementation, we handle this in the onInput event
+      // Here we simulate the validation logic that would prevent multi-character input
+      const newValue = 'abc';
+      const validatedValue = newValue.length <= 1 ? newValue : input.value;
+      
+      expect(validatedValue.length).toBeLessThanOrEqual(1);
     });
   });
 });

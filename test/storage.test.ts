@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { LocalSnippetStore } from '~/storage/local';
+import { LocalSnippetStore, LocalSettingsStore } from '~/storage/local';
 
 describe('LocalSnippetStore', () => {
   let store: LocalSnippetStore;
@@ -364,6 +364,71 @@ describe('LocalSnippetStore', () => {
       const result = await store.addSnippet(snippetWithEmptyFolder);
 
       expect(result.folder).toBe('');
+    });
+  });
+});
+
+describe('LocalSettingsStore', () => {
+  let settingsStore: LocalSettingsStore;
+
+  beforeEach(() => {
+    settingsStore = new LocalSettingsStore();
+    vi.clearAllMocks();
+  });
+
+  describe('getSettings', () => {
+    it('should get settings from storage with defaults', async () => {
+      (chrome.storage.local.get as any).mockResolvedValue({});
+
+      const result = await settingsStore.getSettings();
+
+      expect(result).toEqual({ activatorKey: '/' });
+      expect(chrome.storage.local.get).toHaveBeenCalledWith('settings');
+    });
+
+    it('should merge stored settings with defaults', async () => {
+      const storedSettings = { activatorKey: ';' };
+      (chrome.storage.local.get as any).mockResolvedValue({ settings: storedSettings });
+
+      const result = await settingsStore.getSettings();
+
+      expect(result).toEqual({ activatorKey: ';' });
+    });
+
+    it('should return defaults when storage fails', async () => {
+      (chrome.storage.local.get as any).mockRejectedValue(new Error('Storage error'));
+
+      const result = await settingsStore.getSettings();
+
+      expect(result).toEqual({ activatorKey: '/' });
+    });
+  });
+
+  describe('updateSettings', () => {
+    it('should update settings in storage', async () => {
+      (chrome.storage.local.get as any).mockResolvedValue({ settings: { activatorKey: '/' } });
+
+      const result = await settingsStore.updateSettings({ activatorKey: ';' });
+
+      expect(result).toEqual({ activatorKey: ';' });
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+        settings: { activatorKey: ';' },
+      });
+    });
+
+    it('should merge partial updates with existing settings', async () => {
+      const existingSettings = { activatorKey: '/' };
+      (chrome.storage.local.get as any).mockResolvedValue({ settings: existingSettings });
+
+      const result = await settingsStore.updateSettings({ activatorKey: '?' });
+
+      expect(result).toEqual({ activatorKey: '?' });
+    });
+
+    it('should handle storage errors', async () => {
+      (chrome.storage.local.set as any).mockRejectedValue(new Error('Storage error'));
+
+      await expect(settingsStore.updateSettings({ activatorKey: ';' })).rejects.toThrow('Storage error');
     });
   });
 });

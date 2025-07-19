@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
-import { Snippet } from '~/storage';
-import { LocalSnippetStore } from '~/storage/local';
+import { Snippet, Settings } from '~/storage';
+import { LocalSnippetStore, LocalSettingsStore } from '~/storage/local';
 
 const store = new LocalSnippetStore();
+const settingsStore = new LocalSettingsStore();
 
 export function useSnippets() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
@@ -57,5 +58,41 @@ export function useSnippets() {
     deleteSnippet,
     updateSnippet,
     refresh: loadSnippets
+  };
+}
+
+export function useSettings() {
+  const [settings, setSettings] = useState<Settings>({ activatorKey: '/' });
+  const [loading, setLoading] = useState(true);
+
+  const loadSettings = async () => {
+    try {
+      const loadedSettings = await settingsStore.getSettings();
+      setSettings(loadedSettings);
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const updateSettings = async (settingsUpdate: Partial<Settings>) => {
+    try {
+      const newSettings = await settingsStore.updateSettings(settingsUpdate);
+      setSettings(newSettings);
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+    }
+  };
+
+  return {
+    settings,
+    loading,
+    updateSettings,
+    refresh: loadSettings
   };
 }

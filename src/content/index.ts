@@ -1,8 +1,9 @@
 import Fuse from 'fuse.js';
 import { Snippet } from '~/storage';
-import { LocalSnippetStore } from '~/storage/local';
+import { LocalSnippetStore, LocalSettingsStore } from '~/storage/local';
 
 const store = new LocalSnippetStore();
+const settingsStore = new LocalSettingsStore();
 let commandPalette: HTMLDivElement | null = null;
 let snippets: Snippet[] = [];
 let fuse: Fuse<Snippet>;
@@ -10,6 +11,7 @@ let originalTargetElement: HTMLElement | null = null;
 let extensionContextValid = true;
 let selectedIndex = 0;
 let filteredSnippets: Snippet[] = [];
+let activatorKey = '/'; // Default value, will be loaded from settings
 
 // Function to check if extension context is still valid
 function isExtensionContextValid(): boolean {
@@ -17,6 +19,17 @@ function isExtensionContextValid(): boolean {
     return !!chrome.runtime?.id;
   } catch (error) {
     return false;
+  }
+}
+
+// Function to load activator key from settings
+async function loadActivatorKey() {
+  try {
+    const settings = await settingsStore.getSettings();
+    activatorKey = settings.activatorKey;
+  } catch (error) {
+    console.warn('Failed to load activator key, using default:', error);
+    activatorKey = '/'; // fallback to default
   }
 }
 
@@ -428,7 +441,7 @@ function pasteSnippet(text: string) {
 }
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === '/' && e.target instanceof HTMLElement) {
+  if (e.key === activatorKey && e.target instanceof HTMLElement) {
     const target = e.target as HTMLElement;
 
     // Check if we're in a suitable input context
@@ -455,3 +468,6 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// Initialize activator key from settings
+loadActivatorKey();
