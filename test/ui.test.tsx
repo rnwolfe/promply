@@ -1,4 +1,4 @@
-import { render } from '@testing-library/preact';
+import { render, fireEvent } from '@testing-library/preact';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SnippetForm } from '~/ui/shared/SnippetForm';
 import { SnippetList } from '~/ui/shared/SnippetList';
@@ -162,7 +162,227 @@ describe('UI Components', () => {
     });
   });
 
+  describe('Folder functionality', () => {
+    it('should render folder input in SnippetForm', () => {
+      const mockAdd = vi.fn();
+      const { getByRole } = render(
+        <SnippetForm onAdd={mockAdd} />
+      );
+
+      expect(getByRole('combobox', { name: /folder/i })).toBeInTheDocument();
+    });
+
+    it('should populate folder field when editing snippet with folder', () => {
+      const mockUpdate = vi.fn();
+      const testSnippet: Snippet = {
+        id: '1',
+        title: 'Test Title',
+        body: 'Test Content',
+        folder: 'Work'
+      };
+
+      const { getByDisplayValue } = render(
+        <SnippetForm onUpdate={mockUpdate} editingSnippet={testSnippet} />
+      );
+
+      expect(getByDisplayValue('Work')).toBeInTheDocument();
+    });
+
+    it('should group snippets by folder when groupByFolders is true', () => {
+      const snippets: Snippet[] = [
+        { id: '1', title: 'Snippet 1', body: 'Content 1', folder: 'Work' },
+        { id: '2', title: 'Snippet 2', body: 'Content 2', folder: 'Personal' },
+        { id: '3', title: 'Snippet 3', body: 'Content 3' }
+      ];
+      const mockDelete = vi.fn();
+
+      const { getByText } = render(
+        <SnippetList
+          snippets={snippets}
+          onDelete={mockDelete}
+          groupByFolders={true}
+        />
+      );
+
+      expect(getByText('Work')).toBeInTheDocument();
+      expect(getByText('Personal')).toBeInTheDocument();
+      expect(getByText('Ungrouped')).toBeInTheDocument();
+    });
+
+    it('should filter snippets by folder name in search', () => {
+      const snippets: Snippet[] = [
+        { id: '1', title: 'Meeting notes', body: 'Content 1', folder: 'Work' },
+        { id: '2', title: 'Personal reminder', body: 'Content 2', folder: 'Personal' },
+      ];
+      const mockDelete = vi.fn();
+
+      const { getByText, queryByText } = render(
+        <SnippetList
+          snippets={snippets}
+          onDelete={mockDelete}
+          searchQuery="Work"
+          groupByFolders={false}
+        />
+      );
+
+      expect(getByText('Meeting notes')).toBeInTheDocument();
+      expect(queryByText('Personal reminder')).not.toBeInTheDocument();
+    });
+
+    it('should show folder information when not grouping by folders', () => {
+      const snippets: Snippet[] = [
+        { id: '1', title: 'Test Snippet', body: 'Content 1', folder: 'Work' }
+      ];
+      const mockDelete = vi.fn();
+
+      const { getByText } = render(
+        <SnippetList
+          snippets={snippets}
+          onDelete={mockDelete}
+          groupByFolders={false}
+        />
+      );
+
+      expect(getByText('📁 Work')).toBeInTheDocument();
+    });
+
+    it('should render combobox instead of regular input for folder selection', () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal'];
+
+      const { getByRole } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      expect(combobox).toBeInTheDocument();
+      expect(combobox).toHaveAttribute('aria-expanded', 'false');
+      expect(combobox).toHaveAttribute('aria-haspopup', 'listbox');
+    });
+
+    it('should filter dropdown options when typing in folder combobox', async () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal', 'Projects'];
+
+      const { getByRole, getByText, queryByText } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      
+      // Focus the input to open dropdown
+      fireEvent.focus(combobox);
+      
+      // Type to filter
+      fireEvent.input(combobox, { target: { value: 'Per' } });
+      
+      // Should show Personal but not Work or Projects
+      expect(getByText('Personal')).toBeInTheDocument();
+      expect(queryByText('Work')).not.toBeInTheDocument();
+      expect(queryByText('Projects')).not.toBeInTheDocument();
+    });
+
+    it('should show create option when typing non-existing folder name', async () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal'];
+
+      const { getByRole, getByText } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      
+      // Focus the input to open dropdown
+      fireEvent.focus(combobox);
+      
+      // Type a new folder name
+      fireEvent.input(combobox, { target: { value: 'NewFolder' } });
+      
+      // Should show create option
+      expect(getByText('Create "NewFolder"')).toBeInTheDocument();
+    });
+
+    it('should select first filtered option when pressing Enter without highlighting', async () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal', 'Projects'];
+
+      const { getByRole } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      
+      // Focus the input to open dropdown
+      fireEvent.focus(combobox);
+      
+      // Type to filter to "Personal"
+      fireEvent.input(combobox, { target: { value: 'Per' } });
+      
+      // Press Enter without using arrow keys to highlight
+      fireEvent.keyDown(combobox, { key: 'Enter' });
+      
+      // Should select "Personal" (the first and only filtered result)
+      expect(combobox).toHaveValue('Personal');
+    });
+
+    it('should create new folder when pressing Enter on non-existing name', async () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal'];
+
+      const { getByRole } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      
+      // Focus the input to open dropdown
+      fireEvent.focus(combobox);
+      
+      // Type a new folder name
+      fireEvent.input(combobox, { target: { value: 'NewFolder' } });
+      
+      // Press Enter without using arrow keys to highlight
+      fireEvent.keyDown(combobox, { key: 'Enter' });
+      
+      // Should select the new folder name
+      expect(combobox).toHaveValue('NewFolder');
+    });
+  });
+
   describe('Settings Integration', () => {
+    it('should handle activator key changes', () => {
+      // Test that the UI can handle single character inputs
+      const mockUpdate = vi.fn();
+      
+      // Create a mock input element
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.value = '/';
+      
+      // Simulate changing the value
+      input.value = ';';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      expect(input.value).toBe(';');
+      expect(input.value.length).toBe(1);
+    });
+
+    it('should prevent multi-character activator keys', () => {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.value = '/';
+      
+      // In the actual implementation, we handle this in the onInput event
+      // Here we simulate the validation logic that would prevent multi-character input
+      const newValue = 'abc';
+      const validatedValue = newValue.length <= 1 ? newValue : input.value;
+      
+      expect(validatedValue.length).toBeLessThanOrEqual(1);
+    });
+  });
+        describe('Settings Integration', () => {
     it('should handle activator key changes', () => {
       // Test that the UI can handle single character inputs
       const mockUpdate = vi.fn();

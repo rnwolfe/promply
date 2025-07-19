@@ -391,6 +391,72 @@ body {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+/* Folder combobox styles */
+.folder-combobox {
+  position: relative;
+}
+
+.folder-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.folder-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+}
+
+.folder-option:last-child {
+  border-bottom: none;
+}
+
+.folder-option:hover,
+.folder-option.highlighted {
+  background-color: #f8fafc;
+}
+
+.folder-option.create-option {
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.folder-option.create-option:hover,
+.folder-option.create-option.highlighted {
+  background-color: #eff6ff;
+}
+
+.folder-option.disabled {
+  color: #9ca3af;
+  cursor: default;
+  background-color: transparent;
+}
+
+.folder-option.disabled:hover {
+  background-color: transparent;
+}
+
+.folder-icon,
+.create-icon {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
 .form-textarea {
   min-height: 80px;
   font-family: inherit;
@@ -862,4 +928,72 @@ body {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+}
+
+/* Folder-specific styles */
+.folder-group {
+  margin-bottom: 24px;
+}
+
+.folder-header {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.folder-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.folder-icon {
+  font-size: 18px;
+}
+
+.folder-count {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.folder-snippets {
+  display: grid;
+  gap: 12px;
+  margin-left: 12px;
+}
+
+.snippet-folder {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.folder-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.folder-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #dbeafe;
 }

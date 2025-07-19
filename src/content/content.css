@@ -667,3 +667,30 @@
     gap: 6px;
   }
 }
+
+/* Folder indicator styles */
+.snippet-folder {
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.folder-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1e40af;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid #c7d2fe;
+}
+
+@media (prefers-color-scheme: dark) {
+  .folder-indicator {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: #bfdbfe;
+    border-color: #3730a3;
+  }
+}

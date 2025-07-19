@@ -12,6 +12,11 @@ function Popup() {
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
   const { snippets, loading, addSnippet, deleteSnippet, updateSnippet } = useSnippets();
 
+  // Extract available folders from existing snippets
+  const availableFolders = Array.from(
+    new Set(snippets.filter(s => s.folder).map(s => s.folder!))
+  ).sort();
+
   const openOptionsPage = () => {
     chrome.runtime.openOptionsPage();
   };
@@ -80,7 +85,7 @@ function Popup() {
         </button>
         <h2>Add Snippet</h2>
       </div>
-      <SnippetForm onAdd={handleAddSnippet} compact={true} />
+      <SnippetForm onAdd={handleAddSnippet} compact={true} availableFolders={availableFolders} />
     </>
   );
 
@@ -101,7 +106,8 @@ function Popup() {
       <SnippetForm 
         onUpdate={handleUpdateSnippet} 
         editingSnippet={editingSnippet}
-        compact={true} 
+        compact={true}
+        availableFolders={availableFolders}
       />
     </>
   );

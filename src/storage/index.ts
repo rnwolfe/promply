@@ -4,6 +4,7 @@ export interface Snippet {
   body: string;
   tags?: string[];
   shortcut?: string;
+  folder?: string;
 }
 
 export interface SnippetStore {

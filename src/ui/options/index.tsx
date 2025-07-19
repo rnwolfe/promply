@@ -18,6 +18,11 @@ function Options() {
     setTempSettings({ activatorKey: settings.activatorKey });
   }, [settings.activatorKey]);
 
+  // Extract available folders from existing snippets
+  const availableFolders = Array.from(
+    new Set(snippets.filter(s => s.folder).map(s => s.folder!))
+  ).sort();
+
   const handleUpdateSnippet = async (snippet: Snippet) => {
     await updateSnippet(snippet);
     setEditingSnippet(null);

@@ -63,7 +63,7 @@ async function openCommandPalette() {
   }
 
   fuse = new Fuse(snippets, {
-    keys: ['title', 'body', 'tags'],
+    keys: ['title', 'body', 'tags', 'folder'],
     includeScore: true,
     threshold: 0.3,
   });
@@ -302,6 +302,13 @@ function renderSnippets(snippetsToShow: Snippet[]) {
         </div>
       </div>
       <div class="snippet-preview">${escapeHtml(previewText)}</div>
+      ${
+        snippet.folder
+          ? `<div class="snippet-folder">
+               <span class="folder-indicator">📁 ${escapeHtml(snippet.folder)}</span>
+             </div>`
+          : ''
+      }
       ${
         snippet.tags && snippet.tags.length > 0
           ? `

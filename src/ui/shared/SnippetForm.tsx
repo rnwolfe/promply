@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Snippet } from '~/storage';
+import { FolderCombobox } from './FolderCombobox';
 
 interface SnippetFormProps {
   onAdd?: (snippet: Omit<Snippet, 'id'>) => Promise<void>;
@@ -7,11 +8,13 @@ interface SnippetFormProps {
   editingSnippet?: Snippet | null;
   compact?: boolean;
   className?: string;
+  availableFolders?: string[];
 }
 
-export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, className = '' }: SnippetFormProps) {
+export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, className = '', availableFolders = [] }: SnippetFormProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [folder, setFolder] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditing = !!editingSnippet;
@@ -21,9 +24,11 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
     if (editingSnippet) {
       setTitle(editingSnippet.title);
       setBody(editingSnippet.body);
+      setFolder(editingSnippet.folder || '');
     } else {
       setTitle('');
       setBody('');
+      setFolder('');
     }
   }, [editingSnippet]);
 
@@ -33,20 +38,26 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
 
     setIsSubmitting(true);
     try {
+      const snippetData = { 
+        title: title.trim(), 
+        body: body.trim(),
+        folder: folder.trim() || undefined
+      };
+
       if (isEditing && editingSnippet && onUpdate) {
         await onUpdate({ 
           ...editingSnippet, 
-          title: title.trim(), 
-          body: body.trim() 
+          ...snippetData
         });
       } else if (!isEditing && onAdd) {
-        await onAdd({ title: title.trim(), body: body.trim() });
+        await onAdd(snippetData);
       }
       
       // Only clear form if we're adding (not editing)
       if (!isEditing) {
         setTitle('');
         setBody('');
+        setFolder('');
       }
     } finally {
       setIsSubmitting(false);
@@ -66,6 +77,17 @@ export function SnippetForm({ onAdd, onUpdate, editingSnippet, compact = false, 
             onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
             className="form-input"
             disabled={isSubmitting}
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="folder">Folder (optional)</label>
+          <FolderCombobox
+            value={folder}
+            onChange={setFolder}
+            availableFolders={availableFolders}
+            placeholder="Enter folder name..."
+            disabled={isSubmitting}
+            className=""
           />
         </div>
         <div className="form-group">
