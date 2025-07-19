@@ -3,5 +3,3 @@ chrome.runtime.onInstalled.addListener((details) => {
     chrome.runtime.openOptionsPage();
   }
 });
-
-console.log('Background script loaded.');

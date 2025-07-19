@@ -48,11 +48,6 @@ async function openCommandPalette() {
 
   try {
     snippets = await store.getSnippets();
-    if (snippets.length === 0) {
-      console.log(
-        'No snippets found. You can add snippets in the extension options.',
-      );
-    }
   } catch (error) {
     console.error('Failed to load snippets:', error);
     snippets = [];
@@ -274,10 +269,9 @@ function renderSnippets(snippetsToShow: Snippet[]) {
     emptyState.innerHTML = `
       <div class="empty-icon">📝</div>
       <h4>No ${snippets.length === 0 ? 'snippets' : 'matches'} found</h4>
-      <p>${
-        snippets.length === 0
-          ? 'Add snippets in the extension options to get started'
-          : 'Try adjusting your search terms'
+      <p>${snippets.length === 0
+        ? 'Add snippets in the extension options to get started'
+        : 'Try adjusting your search terms'
       }</p>
     `;
     resultsContainer.appendChild(emptyState);
@@ -302,28 +296,25 @@ function renderSnippets(snippetsToShow: Snippet[]) {
         </div>
       </div>
       <div class="snippet-preview">${escapeHtml(previewText)}</div>
-      ${
-        snippet.folder
-          ? `<div class="snippet-folder">
+      ${snippet.folder
+        ? `<div class="snippet-folder">
                <span class="folder-indicator">📁 ${escapeHtml(snippet.folder)}</span>
              </div>`
-          : ''
+        : ''
       }
-      ${
-        snippet.tags && snippet.tags.length > 0
-          ? `
+      ${snippet.tags && snippet.tags.length > 0
+        ? `
         <div class="snippet-tags">
           ${snippet.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
         </div>
       `
-          : ''
+        : ''
       }
     `;
 
     item.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('Snippet clicked:', snippet.title);
       pasteSnippet(snippet.body);
       closeCommandPalette();
     });
@@ -364,18 +355,15 @@ function handleKeyDown(e: KeyboardEvent) {
 
 function pasteSnippet(text: string) {
   const targetElement = originalTargetElement;
-  console.log('Attempting to paste:', text, 'into:', targetElement);
 
   if (!targetElement) {
     console.warn('No original target element found for pasting');
     navigator.clipboard
       .writeText(text)
       .then(() => {
-        console.log('Text copied to clipboard as fallback');
         showErrorMessage('Snippet copied to clipboard');
       })
       .catch(() => {
-        console.warn('Failed to copy to clipboard');
         showErrorMessage('Failed to paste snippet');
       });
     return;
@@ -403,18 +391,16 @@ function pasteSnippet(text: string) {
     targetElement.dispatchEvent(new Event('input', { bubbles: true }));
     targetElement.dispatchEvent(new Event('change', { bubbles: true }));
     targetElement.dispatchEvent(new Event('keyup', { bubbles: true }));
-
-    console.log('Snippet pasted successfully into input element');
   } else if (targetElement.isContentEditable) {
     // Handle contentEditable elements
     targetElement.focus();
 
     // Try using execCommand first (works in most cases)
+    // TODO: execCommand is deprecated, should refactor.
     if (document.execCommand) {
       try {
         document.execCommand('selectAll');
         document.execCommand('insertText', false, text);
-        console.log('Snippet pasted using execCommand');
         return;
       } catch (error) {
         console.log('execCommand failed, trying alternative method');
@@ -424,17 +410,14 @@ function pasteSnippet(text: string) {
     // Fallback: set textContent
     targetElement.textContent = text;
     targetElement.dispatchEvent(new Event('input', { bubbles: true }));
-    console.log('Snippet pasted into contentEditable element');
   } else {
     console.warn('Element is not suitable for pasting:', targetElement);
     navigator.clipboard
       .writeText(text)
       .then(() => {
-        console.log('Text copied to clipboard as fallback');
         showErrorMessage('Snippet copied to clipboard');
       })
       .catch(() => {
-        console.warn('Failed to copy to clipboard');
         showErrorMessage('Failed to paste snippet');
       });
   }
@@ -463,7 +446,6 @@ document.addEventListener('keydown', (e) => {
 
       e.preventDefault();
       originalTargetElement = target;
-      console.log('Stored original target element:', originalTargetElement);
       openCommandPalette();
     }
   }
