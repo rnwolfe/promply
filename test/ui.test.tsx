@@ -1,4 +1,4 @@
-import { render } from '@testing-library/preact';
+import { render, fireEvent } from '@testing-library/preact';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SnippetForm } from '~/ui/shared/SnippetForm';
 import { SnippetList } from '~/ui/shared/SnippetList';
@@ -258,6 +258,48 @@ describe('UI Components', () => {
       expect(combobox).toBeInTheDocument();
       expect(combobox).toHaveAttribute('aria-expanded', 'false');
       expect(combobox).toHaveAttribute('aria-haspopup', 'listbox');
+    });
+
+    it('should filter dropdown options when typing in folder combobox', async () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal', 'Projects'];
+
+      const { getByRole, getByText, queryByText } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      
+      // Focus the input to open dropdown
+      fireEvent.focus(combobox);
+      
+      // Type to filter
+      fireEvent.input(combobox, { target: { value: 'Per' } });
+      
+      // Should show Personal but not Work or Projects
+      expect(getByText('Personal')).toBeInTheDocument();
+      expect(queryByText('Work')).not.toBeInTheDocument();
+      expect(queryByText('Projects')).not.toBeInTheDocument();
+    });
+
+    it('should show create option when typing non-existing folder name', async () => {
+      const mockAdd = vi.fn();
+      const availableFolders = ['Work', 'Personal'];
+
+      const { getByRole, getByText } = render(
+        <SnippetForm onAdd={mockAdd} availableFolders={availableFolders} />
+      );
+
+      const combobox = getByRole('combobox', { name: /folder/i });
+      
+      // Focus the input to open dropdown
+      fireEvent.focus(combobox);
+      
+      // Type a new folder name
+      fireEvent.input(combobox, { target: { value: 'NewFolder' } });
+      
+      // Should show create option
+      expect(getByText('Create "NewFolder"')).toBeInTheDocument();
     });
   });
 });

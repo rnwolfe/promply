@@ -23,7 +23,7 @@ export function FolderCombobox({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Filter folders based on current input value
+  // Initialize filtered folders when availableFolders changes
   useEffect(() => {
     if (!value.trim()) {
       setFilteredFolders(availableFolders);
@@ -34,7 +34,7 @@ export function FolderCombobox({
       setFilteredFolders(filtered);
     }
     setHighlightedIndex(-1);
-  }, [value, availableFolders]);
+  }, [availableFolders]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -53,6 +53,17 @@ export function FolderCombobox({
     const newValue = (e.target as HTMLInputElement).value;
     onChange(newValue);
     setIsOpen(true);
+    
+    // Update filtered folders immediately to fix dropdown not updating
+    if (!newValue.trim()) {
+      setFilteredFolders(availableFolders);
+    } else {
+      const filtered = availableFolders.filter(folder =>
+        folder.toLowerCase().includes(newValue.toLowerCase())
+      );
+      setFilteredFolders(filtered);
+    }
+    setHighlightedIndex(-1);
   };
 
   const handleInputFocus = () => {
@@ -115,6 +126,7 @@ export function FolderCombobox({
         type="text"
         value={value}
         onChange={handleInputChange}
+        onInput={handleInputChange}
         onFocus={handleInputFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
