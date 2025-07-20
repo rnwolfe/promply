@@ -5,13 +5,16 @@ import { Snippet } from '~/storage';
 import './style.css';
 import '../options/style.css';
 
-type PopupView = 'overview' | 'add' | 'manage' | 'edit';
+type PopupView = 'overview' | 'add' | 'manage' | 'edit' | 'import-export';
 
 function Popup() {
   const [currentView, setCurrentView] = useState<PopupView>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
-  const { snippets, loading, addSnippet, deleteSnippet, updateSnippet } = useSnippets();
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const { snippets, loading, addSnippet, deleteSnippet, updateSnippet, exportSnippets, importSnippets } = useSnippets();
 
   // Extract available folders from existing snippets
   const availableFolders = Array.from(
@@ -36,6 +39,58 @@ function Popup() {
   const handleEditSnippet = (snippet: Snippet) => {
     setEditingSnippet(snippet);
     setCurrentView('edit');
+  };
+
+  const handleExportSnippets = async () => {
+    try {
+      setIsExporting(true);
+      const jsonData = await exportSnippets();
+      
+      // Create a blob and download the file
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `promply-snippets-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      setImportStatus(`✅ Exported ${snippets.length} snippets`);
+      setTimeout(() => setImportStatus(null), 3000);
+    } catch (error) {
+      console.error('Export failed:', error);
+      setImportStatus('❌ Export failed');
+      setTimeout(() => setImportStatus(null), 3000);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportSnippets = async (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const text = await file.text();
+      const result = await importSnippets(text, { merge: true });
+      
+      if (result.success) {
+        setImportStatus(`✅ Imported ${result.imported} snippets`);
+      } else {
+        setImportStatus(`❌ Import failed`);
+      }
+    } catch (error) {
+      console.error('Import failed:', error);
+      setImportStatus('❌ Import failed');
+    } finally {
+      setIsImporting(false);
+      target.value = '';
+      setTimeout(() => setImportStatus(null), 3000);
+    }
   };
 
   const renderOverview = () => (
@@ -65,6 +120,14 @@ function Popup() {
         >
           <span className="button-icon">📚</span>
           Manage ({snippets.length})
+        </button>
+        
+        <button 
+          className="action-button secondary" 
+          onClick={() => setCurrentView('import-export')}
+        >
+          <span className="button-icon">💾</span>
+          Import/Export
         </button>
       </div>
 
@@ -135,6 +198,58 @@ function Popup() {
     </>
   );
 
+  const renderImportExportView = () => (
+    <>
+      <div className="view-header">
+        <button 
+          className="back-button" 
+          onClick={() => setCurrentView('overview')}
+        >
+          ← Back
+        </button>
+        <h2>Import/Export</h2>
+      </div>
+      
+      <div className="import-export-content">
+        <div className="backup-info">
+          <p>Export your snippets for backup or sharing, or import snippets from a file.</p>
+        </div>
+        
+        <div className="backup-actions-popup">
+          <button 
+            onClick={handleExportSnippets}
+            className="popup-export-button"
+            disabled={isExporting || snippets.length === 0}
+          >
+            <span className="button-icon">📤</span>
+            {isExporting ? 'Exporting...' : `Export (${snippets.length})`}
+          </button>
+          
+          <div className="popup-import-section">
+            <label htmlFor="popup-import-file" className="popup-import-button">
+              <span className="button-icon">📥</span>
+              {isImporting ? 'Importing...' : 'Import'}
+            </label>
+            <input
+              id="popup-import-file"
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={handleImportSnippets}
+              disabled={isImporting}
+            />
+          </div>
+        </div>
+        
+        {importStatus && (
+          <div className={`popup-import-status ${importStatus.startsWith('✅') ? 'success' : 'error'}`}>
+            {importStatus}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="popup-container">
       <div className="header">
@@ -150,6 +265,7 @@ function Popup() {
         {currentView === 'add' && renderAddView()}
         {currentView === 'edit' && renderEditView()}
         {currentView === 'manage' && renderManageView()}
+        {currentView === 'import-export' && renderImportExportView()}
         
         {currentView === 'overview' && (
           <div className="footer">

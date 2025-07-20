@@ -10,7 +10,10 @@ function Options() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [tempSettings, setTempSettings] = useState<{ activatorKey: string }>({ activatorKey: '/' });
   const [settingsSaved, setSettingsSaved] = useState(false);
-  const { snippets, loading, addSnippet, deleteSnippet, updateSnippet } = useSnippets();
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const { snippets, loading, addSnippet, deleteSnippet, updateSnippet, exportSnippets, importSnippets } = useSnippets();
   const { settings, updateSettings } = useSettings();
 
   // Update temp settings when actual settings load
@@ -45,6 +48,59 @@ function Options() {
     await updateSettings(tempSettings);
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2000);
+  };
+
+  const handleExportSnippets = async () => {
+    try {
+      setIsExporting(true);
+      const jsonData = await exportSnippets();
+      
+      // Create a blob and download the file
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `promply-snippets-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      setImportStatus(`✅ Successfully exported ${snippets.length} snippets`);
+      setTimeout(() => setImportStatus(null), 3000);
+    } catch (error) {
+      console.error('Export failed:', error);
+      setImportStatus('❌ Export failed. Please try again.');
+      setTimeout(() => setImportStatus(null), 3000);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportSnippets = async (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const text = await file.text();
+      const result = await importSnippets(text, { merge: true });
+      
+      if (result.success) {
+        setImportStatus(`✅ Successfully imported ${result.imported} snippets${result.skipped > 0 ? ` (${result.skipped} duplicates skipped)` : ''}`);
+      } else {
+        setImportStatus(`❌ Import failed: ${result.errors.join(', ')}`);
+      }
+    } catch (error) {
+      console.error('Import failed:', error);
+      setImportStatus('❌ Import failed. Please check the file format.');
+    } finally {
+      setIsImporting(false);
+      // Reset the file input
+      target.value = '';
+      setTimeout(() => setImportStatus(null), 5000);
+    }
   };
 
   return (
@@ -105,6 +161,48 @@ function Options() {
             >
               {settingsSaved ? '✓ Settings Saved' : 'Save Settings'}
             </button>
+          </div>
+
+          <div className="import-export-section">
+            <h3>
+              <span className="section-icon">💾</span>
+              Backup & Restore
+            </h3>
+            <p className="section-description">
+              Export your snippets to a file for backup or sharing, or import snippets from a file.
+            </p>
+            
+            <div className="backup-actions">
+              <button 
+                onClick={handleExportSnippets}
+                className="export-button"
+                disabled={isExporting || snippets.length === 0}
+              >
+                <span className="button-icon">📤</span>
+                {isExporting ? 'Exporting...' : `Export Snippets (${snippets.length})`}
+              </button>
+              
+              <div className="import-section">
+                <label htmlFor="import-file" className="import-button">
+                  <span className="button-icon">📥</span>
+                  {isImporting ? 'Importing...' : 'Import Snippets'}
+                </label>
+                <input
+                  id="import-file"
+                  type="file"
+                  accept=".json"
+                  style={{ display: 'none' }}
+                  onChange={handleImportSnippets}
+                  disabled={isImporting}
+                />
+              </div>
+            </div>
+            
+            {importStatus && (
+              <div className={`import-status ${importStatus.startsWith('✅') ? 'success' : 'error'}`}>
+                {importStatus}
+              </div>
+            )}
           </div>
 
           <div className="add-snippet-section">
