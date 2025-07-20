@@ -14,7 +14,10 @@
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
     "https://gemini.google.com/*",
-    "https://claude.ai/*"
+    "https://claude.ai/*",
+    "https://grok.com/*",
+    "https://midjourney.com/*",
+    "https://perplexity.ai/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -37,7 +40,10 @@
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",
         "https://gemini.google.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://grok.com/*",
+        "https://midjourney.com/*",
+        "https://perplexity.ai/*"
       ],
       "js": ["js/content.js"],
       "css": ["assets/content.css"]
