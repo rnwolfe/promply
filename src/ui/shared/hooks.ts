@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { Snippet, Settings } from '~/storage';
+import { Snippet, Settings, ImportOptions, ImportResult } from '~/storage';
 import { LocalSnippetStore, LocalSettingsStore } from '~/storage/local';
 
 const store = new LocalSnippetStore();
@@ -51,12 +51,36 @@ export function useSnippets() {
     }
   };
 
+  const exportSnippets = async (): Promise<string> => {
+    try {
+      return await store.exportSnippets();
+    } catch (error) {
+      console.error('Failed to export snippets:', error);
+      throw error;
+    }
+  };
+
+  const importSnippets = async (jsonData: string, options?: ImportOptions): Promise<ImportResult> => {
+    try {
+      const result = await store.importSnippets(jsonData, options);
+      if (result.success) {
+        await loadSnippets();
+      }
+      return result;
+    } catch (error) {
+      console.error('Failed to import snippets:', error);
+      throw error;
+    }
+  };
+
   return {
     snippets,
     loading,
     addSnippet,
     deleteSnippet,
     updateSnippet,
+    exportSnippets,
+    importSnippets,
     refresh: loadSnippets
   };
 }

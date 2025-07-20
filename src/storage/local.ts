@@ -1,4 +1,4 @@
-import { Snippet, SnippetStore, Settings, SettingsStore } from '.';
+import { Snippet, SnippetStore, Settings, SettingsStore, ImportOptions, ImportResult } from '.';
 
 const SNIPPETS_KEY = 'snippets';
 const SETTINGS_KEY = 'settings';
@@ -90,6 +90,107 @@ export class LocalSnippetStore implements SnippetStore {
     } catch (error) {
       console.error('Failed to delete snippet:', error);
       throw error;
+    }
+  }
+
+  async exportSnippets(): Promise<string> {
+    try {
+      if (!isExtensionContextValid()) {
+        throw new Error(
+          'Extension context invalidated - cannot access storage',
+        );
+      }
+      const snippets = await this.getSnippets();
+      const exportData = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        snippets: snippets,
+      };
+      return JSON.stringify(exportData, null, 2);
+    } catch (error) {
+      console.error('Failed to export snippets:', error);
+      throw error;
+    }
+  }
+
+  async importSnippets(jsonData: string, options: ImportOptions = { merge: true }): Promise<ImportResult> {
+    try {
+      if (!isExtensionContextValid()) {
+        throw new Error(
+          'Extension context invalidated - cannot access storage',
+        );
+      }
+
+      const result: ImportResult = {
+        success: false,
+        imported: 0,
+        skipped: 0,
+        errors: [],
+      };
+
+      // Parse JSON data
+      let importData: any;
+      try {
+        importData = JSON.parse(jsonData);
+      } catch (parseError) {
+        result.errors.push('Invalid JSON format');
+        return result;
+      }
+
+      // Validate import data structure
+      if (!importData.snippets || !Array.isArray(importData.snippets)) {
+        result.errors.push('Invalid data format: snippets array not found');
+        return result;
+      }
+
+      const importSnippets = importData.snippets;
+      const existingSnippets = options.merge ? await this.getSnippets() : [];
+      const existingTitles = new Set(existingSnippets.map(s => s.title.toLowerCase()));
+
+      // Process each snippet
+      const validSnippets: Snippet[] = [];
+      for (const snippet of importSnippets) {
+        // Validate required fields
+        if (!snippet.title || !snippet.body) {
+          result.errors.push(`Snippet missing required fields: ${snippet.title || 'untitled'}`);
+          continue;
+        }
+
+        // Check for duplicates when merging
+        if (options.merge && existingTitles.has(snippet.title.toLowerCase())) {
+          result.skipped++;
+          continue;
+        }
+
+        // Create new snippet with new ID
+        const newSnippet: Snippet = {
+          id: crypto.randomUUID(),
+          title: snippet.title,
+          body: snippet.body,
+          tags: snippet.tags || [],
+          shortcut: snippet.shortcut,
+          folder: snippet.folder,
+          variables: snippet.variables || [],
+        };
+
+        validSnippets.push(newSnippet);
+        result.imported++;
+      }
+
+      // Save snippets
+      const finalSnippets = options.merge ? [...existingSnippets, ...validSnippets] : validSnippets;
+      await chrome.storage.local.set({ [SNIPPETS_KEY]: finalSnippets });
+
+      result.success = true;
+      return result;
+    } catch (error) {
+      console.error('Failed to import snippets:', error);
+      return {
+        success: false,
+        imported: 0,
+        skipped: 0,
+        errors: [error instanceof Error ? error.message : 'Unknown error occurred'],
+      };
     }
   }
 }

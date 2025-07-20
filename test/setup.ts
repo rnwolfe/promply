@@ -35,4 +35,7 @@ beforeEach(() => {
   // Reset chrome storage mocks to default success behavior
   (chrome.storage.local.get as any).mockResolvedValue({});
   (chrome.storage.local.set as any).mockResolvedValue();
+  
+  // Ensure runtime.id is always mocked for isExtensionContextValid()
+  vi.spyOn(chrome.runtime, 'id', 'get').mockReturnValue('test-extension-id');
 });
