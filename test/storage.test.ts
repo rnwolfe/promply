@@ -6,8 +6,9 @@ describe('LocalSnippetStore', () => {
 
   beforeEach(() => {
     store = new LocalSnippetStore();
-    // Reset mocks before each test
+    // Reset mocks before each test but preserve runtime.id
     vi.clearAllMocks();
+    vi.spyOn(chrome.runtime, 'id', 'get').mockReturnValue('test-extension-id');
   });
 
   describe('getSnippets', () => {
@@ -366,6 +367,218 @@ describe('LocalSnippetStore', () => {
       expect(result.folder).toBe('');
     });
   });
+
+  describe('exportSnippets', () => {
+    it('should export snippets in JSON format', async () => {
+      const snippets = [
+        { id: '1', title: 'Test 1', body: 'Body 1', tags: ['tag1'], folder: 'folder1' },
+        { id: '2', title: 'Test 2', body: 'Body 2', tags: ['tag2'] }
+      ];
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets });
+
+      const result = await store.exportSnippets();
+      const parsed = JSON.parse(result);
+
+      expect(parsed.version).toBe('1.0');
+      expect(parsed.snippets).toEqual(snippets);
+      expect(parsed.exportedAt).toBeDefined();
+      expect(new Date(parsed.exportedAt)).toBeInstanceOf(Date);
+    });
+
+    it('should export empty array when no snippets exist', async () => {
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: [] });
+
+      const result = await store.exportSnippets();
+      const parsed = JSON.parse(result);
+
+      expect(parsed.snippets).toEqual([]);
+    });
+
+    it('should handle extension context invalidation', async () => {
+      // Mock isExtensionContextValid to return false
+      vi.spyOn(chrome.runtime, 'id', 'get').mockReturnValue(undefined);
+
+      await expect(store.exportSnippets()).rejects.toThrow('Extension context invalidated');
+    });
+
+    it('should handle storage errors during export', async () => {
+      // Mock the extension context as invalid to trigger the error path
+      vi.spyOn(chrome.runtime, 'id', 'get').mockReturnValue(undefined);
+
+      await expect(store.exportSnippets()).rejects.toThrow('Extension context invalidated');
+    });
+  });
+
+  describe('importSnippets', () => {
+    const validImportData = {
+      version: '1.0',
+      exportedAt: '2024-01-01T00:00:00.000Z',
+      snippets: [
+        { title: 'Import Test 1', body: 'Import Body 1', tags: ['import'], folder: 'imported' },
+        { title: 'Import Test 2', body: 'Import Body 2', tags: ['import'] }
+      ]
+    };
+
+    it('should import snippets and merge with existing ones', async () => {
+      const existingSnippets = [
+        { id: '1', title: 'Existing', body: 'Existing body' }
+      ];
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: existingSnippets });
+
+      const result = await store.importSnippets(JSON.stringify(validImportData), { merge: true });
+
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(2);
+      expect(result.skipped).toBe(0);
+      expect(result.errors).toHaveLength(0);
+
+      // Verify storage was called with merged snippets
+      const setCall = (chrome.storage.local.set as any).mock.calls[0][0];
+      expect(setCall.snippets).toHaveLength(3); // 1 existing + 2 imported
+      expect(setCall.snippets[0]).toEqual(existingSnippets[0]);
+      expect(setCall.snippets[1].title).toBe('Import Test 1');
+      expect(setCall.snippets[2].title).toBe('Import Test 2');
+    });
+
+    it('should replace all snippets when merge is false', async () => {
+      const existingSnippets = [
+        { id: '1', title: 'Existing', body: 'Existing body' }
+      ];
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: existingSnippets });
+
+      const result = await store.importSnippets(JSON.stringify(validImportData), { merge: false });
+
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(2);
+
+      // Verify storage was called with only imported snippets
+      const setCall = (chrome.storage.local.set as any).mock.calls[0][0];
+      expect(setCall.snippets).toHaveLength(2); // Only imported snippets
+    });
+
+    it('should skip duplicate snippets when merging', async () => {
+      const existingSnippets = [
+        { id: '1', title: 'Import Test 1', body: 'Existing body' }
+      ];
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: existingSnippets });
+
+      const result = await store.importSnippets(JSON.stringify(validImportData), { merge: true });
+
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(1); // Only one new snippet
+      expect(result.skipped).toBe(1); // One duplicate skipped
+    });
+
+    it('should handle invalid JSON format', async () => {
+      const result = await store.importSnippets('invalid json');
+
+      expect(result.success).toBe(false);
+      expect(result.imported).toBe(0);
+      expect(result.errors).toContain('Invalid JSON format');
+    });
+
+    it('should handle missing snippets array', async () => {
+      const invalidData = { version: '1.0' };
+
+      const result = await store.importSnippets(JSON.stringify(invalidData));
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('Invalid data format: snippets array not found');
+    });
+
+    it('should handle snippets with missing required fields', async () => {
+      const invalidSnippets = {
+        version: '1.0',
+        snippets: [
+          { title: 'Valid', body: 'Valid body' },
+          { title: '', body: 'Missing title' },
+          { title: 'Missing body', body: '' },
+          { body: 'Missing title completely' }
+        ]
+      };
+
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: [] });
+
+      const result = await store.importSnippets(JSON.stringify(invalidSnippets));
+
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(1); // Only the valid snippet
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should generate new IDs for imported snippets', async () => {
+      const snippetsWithIds = {
+        version: '1.0',
+        snippets: [
+          { id: 'old-id-1', title: 'Test 1', body: 'Body 1' },
+          { id: 'old-id-2', title: 'Test 2', body: 'Body 2' }
+        ]
+      };
+
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: [] });
+
+      const result = await store.importSnippets(JSON.stringify(snippetsWithIds));
+
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(2);
+
+      const setCall = (chrome.storage.local.set as any).mock.calls[0][0];
+      expect(setCall.snippets[0].id).not.toBe('old-id-1');
+      expect(setCall.snippets[1].id).not.toBe('old-id-2');
+      expect(setCall.snippets[0].id).toBeDefined();
+      expect(setCall.snippets[1].id).toBeDefined();
+    });
+
+    it('should preserve optional fields during import', async () => {
+      const complexSnippets = {
+        version: '1.0',
+        snippets: [
+          {
+            title: 'Complex Snippet',
+            body: 'Body with {{variable}}',
+            tags: ['tag1', 'tag2'],
+            shortcut: 'cs',
+            folder: 'imports',
+            variables: [{ name: 'variable', description: 'A variable', defaultValue: 'default' }]
+          }
+        ]
+      };
+
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: [] });
+
+      const result = await store.importSnippets(JSON.stringify(complexSnippets));
+
+      expect(result.success).toBe(true);
+      const setCall = (chrome.storage.local.set as any).mock.calls[0][0];
+      const importedSnippet = setCall.snippets[0];
+
+      expect(importedSnippet.tags).toEqual(['tag1', 'tag2']);
+      expect(importedSnippet.shortcut).toBe('cs');
+      expect(importedSnippet.folder).toBe('imports');
+      expect(importedSnippet.variables).toHaveLength(1);
+      expect(importedSnippet.variables[0].name).toBe('variable');
+    });
+
+    it('should handle extension context invalidation', async () => {
+      // Mock isExtensionContextValid to return false
+      vi.spyOn(chrome.runtime, 'id', 'get').mockReturnValue(undefined);
+
+      const result = await store.importSnippets(JSON.stringify(validImportData));
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('Extension context invalidated - cannot access storage');
+    });
+
+    it('should handle storage errors during import', async () => {
+      (chrome.storage.local.get as any).mockResolvedValue({ snippets: [] });
+      (chrome.storage.local.set as any).mockRejectedValue(new Error('Storage error'));
+
+      const result = await store.importSnippets(JSON.stringify(validImportData));
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('Storage error');
+    });
+  });
 });
 
 describe('LocalSettingsStore', () => {
@@ -374,6 +587,7 @@ describe('LocalSettingsStore', () => {
   beforeEach(() => {
     settingsStore = new LocalSettingsStore();
     vi.clearAllMocks();
+    vi.spyOn(chrome.runtime, 'id', 'get').mockReturnValue('test-extension-id');
   });
 
   describe('getSettings', () => {

@@ -19,6 +19,19 @@ export interface SnippetStore {
   addSnippet: (snippet: Omit<Snippet, 'id'>) => Promise<Snippet>;
   updateSnippet: (snippet: Snippet) => Promise<Snippet>;
   deleteSnippet: (id: string) => Promise<void>;
+  exportSnippets: () => Promise<string>;
+  importSnippets: (jsonData: string, options?: ImportOptions) => Promise<ImportResult>;
+}
+
+export interface ImportOptions {
+  merge?: boolean; // true = merge with existing, false = replace all
+}
+
+export interface ImportResult {
+  success: boolean;
+  imported: number;
+  skipped: number;
+  errors: string[];
 }
 
 export interface Settings {
